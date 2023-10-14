@@ -11,6 +11,11 @@ import com.example.taller02_computacinmvil.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
+    /**
+     * 1. Defina una aplicación usando el layout de su preferencia y dentro del mismo ubique dos botones
+     * con imágenes. El resultado debe verse similar a la figura 1.
+     */
+
     // View binding instance for the main activity's layout
     private lateinit var binding: ActivityMainBinding
 

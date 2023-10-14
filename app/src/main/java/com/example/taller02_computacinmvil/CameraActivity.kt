@@ -25,60 +25,104 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.logging.Logger
 
+/**
+ *  Coded by: Fabio Luis Buitrago Ochoa
+ */
+
 class CameraActivity : AppCompatActivity() {
 
+    /**
+     * 2. Programe el primer botón para lanzar una nueva actividad que permita cargar una imagen en la pantalla
+     * a través de la galería o la cámara de fotos. La imagen obtenida se debe mostrar en el centro de la actividad
+     * y con un tamaño fijo sin importar el tamaño de la imagen original. El resultado debe ser igual al de la
+     * Figura 2.
+     */
+
+    // View binding instance for the camera activity's layout
     private lateinit var binding: ActivityCameraBinding
 
+    // Logger setup
     companion object {
         val TAG: String = CameraActivity::class.java.name
     }
     private val logger = Logger.getLogger(TAG)
+    // Logger setup
 
-    // Permission handler
+    // Permission handler using ActivityResultContracts
     private val getSimplePermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()) {
         updateUI(it)
     }
 
+    // Variables for handling image and video capture
     var pictureImagePath: Uri? = null
     var imageViewContainer: ImageView? = null
     var videoViewContainer: VideoView? = null
     lateinit var switchCompat: SwitchCompat
 
-    // Create ActivityResultLauncher instances
+    /**
+     *  -- C A M E R A --
+     *  3. (25%) Al hacer clic en el botón TAKE y el TOGGLE DE VIDEO ESTÁ DESACTIVADO se debe solicitar
+     *  permisos de uso de la cámara y el usuario puede tomar una FOTO usando la app de cámara que posee
+     *  el dispositivo, cuando el usuario tome correctamente la foto esta debe ser mostrada en un ImageView
+     *  dentro de la actividad.
+     */
+    // Create ActivityResultLauncher instances for Camera
     private val cameraActivityResultLauncherCamera = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
-            // Handle camera result
+            // Handle camera result by displaying the captured image
             imageViewContainer!!.setImageURI(pictureImagePath)
             imageViewContainer!!.setScaleType(ImageView.ScaleType.FIT_CENTER)
             imageViewContainer!!.setAdjustViewBounds(true)
-            logger.info("Image capture successfully.")
+            // Handle camera result by displaying the captured image
         } else {
             logger.warning("Image capture failed.")
         }
     }
 
+    /**
+     *  -- V I D E O --
+     *  3. (25%9 Al hacer click en el botón TAKE y el TOGGLE DE VIDEO ESTÁ ACTIVADO se debe solicitar permisos
+     *  de uso de la cámara y el usuario puede tomar un VIDEO usando la app de cámara que posee el dispositivo,
+     *  cuando el usuario tome correctamente el VIDEO este debe ser mostrada en un VideoView dentro de la actividad.
+     */
+    // Create ActivityResultLauncher instances for Video
     private val cameraActivityResultLauncherVideo = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
-            // Handle camera result
+            // Handle video capture by displaying the captured video
             videoViewContainer!!.setVideoURI(result.data!!.data)
             videoViewContainer!!.foregroundGravity = View.TEXT_ALIGNMENT_CENTER
             videoViewContainer!!.setMediaController(MediaController(this))
             videoViewContainer!!.start()
             videoViewContainer!!.setZOrderOnTop(true)
+            // Handle video capture by displaying the captured video
         }
         else {
             logger.warning("Video capture failed.")
         }
     }
 
+
+    /**
+     *  -- G A L L E R Y --
+     *  (25%) Al hacer clic en el botón PICK FROM GALLERY y el TOGGLE DE VIDEO ESTÁ DESACTIVADO se deben
+     *  solicitar permisos de uso de almacenamiento y el usuario puede seleccionar una FOTO desde la galería,
+     *  cuando el usuario seleccione correctamente la FOTO esta debe ser mostrada en un ImageView dentro de la
+     *  actividad.
+     *
+     * Al hacer click en el botón PICK FROM GALLERY y el TOGGLE DE VIDEO ESTÁ ACTIVADO se deben solicitar permisos
+     * de uso de almacenamiento y el usuario puede seleccionar un VIDEO desde la galería, cuando el usuario
+     * seleccione correctamente el VIDEO este debe ser mostrada en un VideoView dentro de la actividad.
+     */
+
+    // Handle gallery result by displaying the selected image or video
     private val galleryActivityResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
-            // Handle gallery result
             if (switchCompat.isChecked) {
+                // Display selected video
                 val videoUri: Uri? = result.data!!.data
                 videoViewContainer!!.setVideoURI(videoUri)
                 videoViewContainer!!.setVideoURI(result.data!!.data)
@@ -91,7 +135,7 @@ class CameraActivity : AppCompatActivity() {
                 logger.info("Video loaded successfully")
             }
             else {
-
+                // Display selected image
                 val imageUri: Uri? = result.data!!.data
                 imageViewContainer!!.setImageURI(imageUri)
                 videoViewContainer!!.visibility = View.GONE
@@ -102,8 +146,13 @@ class CameraActivity : AppCompatActivity() {
     }
 
 
-
-
+    /**
+     * This function is called when the activity is created.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down,
+     * then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
+     * Note: Otherwise, it is null.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

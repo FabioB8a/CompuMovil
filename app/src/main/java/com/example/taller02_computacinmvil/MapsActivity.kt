@@ -54,6 +54,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.util.logging.Logger
 
+/**
+ *  Coded by: Fabio Luis Buitrago Ochoa
+ */
+
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     companion object {
