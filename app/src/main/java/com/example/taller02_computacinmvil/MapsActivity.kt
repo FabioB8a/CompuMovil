@@ -507,6 +507,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         routeResponse?.features?.first()?.geometry?.coordinates?.forEach {
             polyLineOptions.add(LatLng(it[1], it[0]))
         }
+
+        // Customize the Polyline appearance here
+        polyLineOptions.width(20f) // Set the width (thickness) in pixels
+        polyLineOptions.color(Color.GREEN) // Set the color (e.g., blue)
+
         runOnUiThread {
             poly = mMap.addPolyline(polyLineOptions)
         }
