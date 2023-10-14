@@ -60,57 +60,77 @@ import java.util.logging.Logger
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
+    /**
+     *  5. (10%) Programe el último botón para lanzar una actividad que muestre un mapa con un marcador en la
+     *  localización actual del usuario como se muestra en la figura 3.
+     */
+
+    // Companion object for constants and class-level variables
     companion object {
         val TAG: String = CameraActivity::class.java.name
-        private const val INITIAL_ZOOM_LEVEL = 15
-        const val lowerLeftLatitude = 4.5733  // Latitud del límite inferior izquierdo de Bogotá
-        const val lowerLeftLongitude = -74.1502  // Longitud del límite inferior izquierdo de Bogotá
-        const val upperRightLatitude = 4.8121  // Latitud del límite superior derecho de Bogotá
-        const val upperRightLongitude = -74.0096  // Longitud del límite superior derecho de Bogotá
+        const val lowerLeftLatitude = 4.5733      // Latitude of the lower-left boundary of Bogotá
+        const val lowerLeftLongitude = -74.1502   // Longitude of the lower-left boundary of Bogotá
+        const val upperRightLatitude = 4.8121     // Latitude of the upper-right boundary of Bogotá
+        const val upperRightLongitude = -74.0096  // Longitude of the upper-right boundary of Bogotá
     }
     private val logger = Logger.getLogger(TAG)
 
+    // Map-related variables
     private lateinit var mMap: GoogleMap
     private var isMapInitialized = false
     private lateinit var binding: ActivityMapsBinding
 
-    // Agrega esta variable para almacenar las ubicaciones anteriores del usuario.
+    // List to store previous user locations
     private val previousLocations: MutableList<LatLng> = ArrayList()
 
+    // Location-related variables
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
     private var mLocationRequest: LocationRequest? = null
     private var mLocationCallback: LocationCallback? = null
     var mCurrentLocation: Location? = null
 
+    // Constants for location permissions and settings request
     private val LOCATION_PERMISSION_ID = 103
     private val REQUEST_CHECK_SETTINGS = 201
     var locationPerm = Manifest.permission.ACCESS_FINE_LOCATION
 
+    // Sensor variables
     lateinit var sensorManager: SensorManager
     lateinit var lightSensor: Sensor
     lateinit var lightSensorListener: SensorEventListener
 
+    // Geocoder instance for address conversion
     private lateinit var mGeocoder: Geocoder
+
+    // EditText for user input of an address
     lateinit var mAddress: EditText
 
-    // Bono
-    private var polylineBond: Polyline? = null
-    private var start: String = ""
-    private var end: String = ""
-    var poly: Polyline? = null
+    // Bono (Bonus Section)
+    private var polylineBond: Polyline? = null  // Polyline for bonus route
+    private var start: String = ""               // Starting location for bonus route
+    private var end: String = ""                 // Ending location for bonus route
+    var poly: Polyline? = null                   // Polyline for drawing the route on the map
 
 
 
+    /**
+     * Called when the activity is first created.
+     *
+     * @param savedInstanceState The saved instance state Bundle.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Inflates the layout and sets it as the content view
         binding = ActivityMapsBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
 
+        // Creates a location request and initializes the fused location client
         mLocationRequest = createLocationRequest()
-
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        // Requests location permission and initializes the activity
         requestPermission(
             this,
             locationPerm,
@@ -118,10 +138,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             LOCATION_PERMISSION_ID
         )
 
+        // Initialize the activity
         init()
-
     }
 
+
+    /**
+     * Called when the activity is resumed. Registers the light sensor listener and starts location updates.
+     */
     override fun onResume() {
         super.onResume()
         sensorManager.registerListener(
@@ -132,6 +156,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         startLocationUpdates()
     }
 
+    /**
+     * Called when the activity is paused. Unregisters the light sensor listener and stops location updates.
+     */
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(lightSensorListener)
@@ -139,20 +166,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
 
-
+    /**
+     * Initializes various components and settings in the MapsActivity.
+     */
     private fun init(){
 
+        // Obtain a reference to the Google Map fragment
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        /**
+         * 6. (10%) El mapa mostrado debe reaccionar a cambios en el sensor de luminosidad y debe presentarse con dos estilos
+         * diferentes: oscuro para condiciones de baja luminosidad, y claro para condiciones de alta luminosidad.
+         */
 
         // Initialize the sensors
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
-        // Initialize the listener
+        // Initialize the sensor listener for light changes
         lightSensorListener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
+                // Check for changes in light sensor values and update the map style accordingly
                 if (isMapInitialized) {
                     if (event.values[0] < 5000) {
                         Log.i("MAPS", "DARK MAP " + event.values[0])
@@ -177,6 +213,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             override fun onAccuracyChanged(sensor: Sensor, i: Int) {}
         }
 
+        /**
+         * 7. (10%) Cuando el usuario se desplace en el mapa (on location change) se debe pintar un polyline que muestre
+         * la ruta de desplazamiento del usuario como muestra la figura 3.
+         */
+
+        // Set up the location callback to handle user location changes
         mLocationCallback = object : LocationCallback() {
             @SuppressLint("SetTextI18n")
             override fun onLocationResult(locationResult: LocationResult) {
@@ -185,17 +227,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     logger.info("+"+location.latitude)
                     logger.info("-" +location.longitude)
                     mCurrentLocation = location
-                    // Agrega la ubicación a la lista de ubicaciones anteriores.
+                    // Add the location to the list of previous locations
                     previousLocations.add(LatLng(location.latitude, location.longitude))
 
-                    // Dibuja el Polyline en el mapa para mostrar la ruta de desplazamiento.
+                    // Draw a Polyline on the map to display the user's route.
                     drawPolylineOnMap(previousLocations)
                 }
             }
         }
 
+        // Turn on location updates and initialize location settings
         turnOnLocationAndStartUpdates()
 
+        /**
+         * 8. (10%) La actividad de mapas debe mostrar un cuadro de texto que permite al usuario ingresar una
+         * dirección en texto claro, por ejemplo “Universidad Javeriana” y cuando termine de editar el texto
+         * se debe crear un pin con la dirección encontrada usando Geocoder como muestra la figura 4.
+         * (Buscar posición con base en un texto). No olvide mover la cámara del mapa al punto encontrado.
+         */
+
+        // Set up the Geocoder and EditText for address search
         mGeocoder = Geocoder(baseContext)
         mAddress = binding.address
         mAddress.setOnEditorActionListener { v, actionId, event ->
@@ -206,21 +257,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
 
-    }
-
-
-    private fun drawPolylineOnMap(locations: List<LatLng>) {
-        val polylineOptions = PolylineOptions()
-        for (location in locations) {
-            polylineOptions.add(location)
-        }
-
-        // Configura el estilo de la línea, como color y ancho.
-        polylineOptions.color(Color.GRAY)
-        polylineOptions.width(20f)
-
-        // Agrega el Polyline al mapa.
-        mMap.addPolyline(polylineOptions)
     }
 
     /**
@@ -257,6 +293,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
 
+            /**
+             * 9. (10 %) Adicionalmente, programe el mapa para que reaccione a un evento de tipo “LongClick” y cree un marcador
+             * en la posición del evento. El título del marcador debe ser la dirección obtenida utilizando Geocoder
+             * (Buscar texto con base en una posición).
+             */
             mMap.setOnMapLongClickListener { latLng ->
                 try {
                     val addresses = mGeocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
@@ -287,37 +328,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
-    private fun requestPermission(
-        context: Activity,
-        permission: String,
-        justification: String,
-        id: Int
-    ) {
-        // Verificar si no hay permisos
-        if (ContextCompat.checkSelfPermission(
-                context,
-                permission
-            ) == PackageManager.PERMISSION_DENIED
-        ) {
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(context, permission)) {
-                Toast.makeText(context, justification, Toast.LENGTH_SHORT).show()
-            }
-            // Request the permission
-            ActivityCompat.requestPermissions(context, arrayOf(permission), id)
-        }
-    }
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_ID) {
-            init()
-        }
-    }
 
+    /**
+     *  -- L O C A T I O N - A W A R E --
+     */
+
+    /**
+     * Initializes the location settings, including checking for necessary permissions,
+     * setting location request parameters, and handling location updates.
+     */
     private fun turnOnLocationAndStartUpdates() {
         val builder = LocationSettingsRequest.Builder().addLocationRequest(
             mLocationRequest!!
@@ -327,12 +346,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         task.addOnSuccessListener(
             this
         ) { locationSettingsResponse: LocationSettingsResponse? ->
-            startLocationUpdates() // Todas las condiciones para recibiir localizaciones
+            startLocationUpdates() // All conditions are met for receiving locations
         }
         task.addOnFailureListener(this) { e ->
             val statusCode = (e as ApiException).statusCode
             when (statusCode) {
-                CommonStatusCodes.RESOLUTION_REQUIRED ->                         // Location setttings are not satisfied, but this can be fixed by showing the user a dialog.
+                CommonStatusCodes.RESOLUTION_REQUIRED ->
+                    // Location settings are not satisfied, but this can be fixed by showing the user a dialog.
                     try {
                         // Show the dialog by calling startResolutionForResult(), and check the result in onActivityResult()
                         val resolvable = e as ResolvableApiException
@@ -343,12 +363,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     } catch (sendEx: IntentSender.SendIntentException) {
                         // Ignore the error
                     }
-
                 LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> {}
             }
         }
     }
 
+    /**
+     * Creates a location request with specified parameters.
+     */
     private fun createLocationRequest(): LocationRequest {
         return LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1).apply {
             setMinUpdateDistanceMeters(5F)
@@ -357,16 +379,48 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }.build()
     }
 
+    /**
+     * Starts location updates if permission is granted and updates are requested.
+     */
     private fun startLocationUpdates() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mFusedLocationClient!!.requestLocationUpdates(mLocationRequest!!, mLocationCallback!!, Looper.getMainLooper())
         }
     }
 
+    /**
+     * Stops location updates if they were previously started.
+     */
     private fun stopLocationUpdates() {
         mFusedLocationClient!!.removeLocationUpdates(mLocationCallback!!)
     }
 
+
+    /**
+     * Draws a polyline on the map using a list of locations.
+     */
+    private fun drawPolylineOnMap(locations: List<LatLng>) {
+        val polylineOptions = PolylineOptions()
+        for (location in locations) {
+            polylineOptions.add(location)
+        }
+
+        // Configure the style of the line, such as color and width.
+        polylineOptions.color(Color.GRAY)
+        polylineOptions.width(20f)
+
+        // Add the Polyline to the map.
+        mMap.addPolyline(polylineOptions)
+    }
+
+    /**
+     *  -- G E O C O D E R --
+     */
+
+    /**
+     * Searches for a location based on the user-entered address and adds a marker to the map.
+     * If a valid address is found, the map's camera is moved to the new location.
+     */
     private fun findAddress() {
         val addressString = mAddress.text.toString()
         if (addressString.isNotEmpty()) {
@@ -403,7 +457,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    // Bono
+
+    /**
+     *  -- B O N O --
+     *  ¡BONO! (0.5 sobre la nota del taller) Construya y despliegue en el mapa una ruta entre la localización
+     *  actual del usuario y un punto creado a partir de texto como en el punto 8, o tocando un punto en el mapa
+     *  como en el punto 9.
+     */
+
+    /**
+     * Initiates the process of creating a route between two geographical points.
+     * Uses the OpenRouteService API to calculate the route and draws it on the map.
+     */
     private fun createRoute() {
         CoroutineScope(Dispatchers.IO).launch {
             val call = getRetrofit().create(ApiService::class.java)
@@ -416,6 +481,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Draws a route on the map based on the provided route response.
+     *
+     * @param routeResponse The response containing the route information.
+     */
     private fun drawRoute(routeResponse: RouteResponse?) {
         val polyLineOptions = PolylineOptions()
         routeResponse?.features?.first()?.geometry?.coordinates?.forEach {
@@ -426,11 +496,67 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Creates and configures a Retrofit instance for API requests to OpenRouteService.
+     *
+     * @return A Retrofit instance with the necessary configurations.
+     */
     private fun getRetrofit(): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://api.openrouteservice.org/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+
+    /**
+     *  -- P E R M I S S I O N S --
+     */
+
+    /**
+     * Requests a specific permission with optional justification, and displays a Toast message
+     * if permission needs to be explained to the user.
+     *
+     * @param context The activity context.
+     * @param permission The permission to request.
+     * @param justification An optional justification message.
+     * @param id The unique identifier for the permission request.
+     */
+    private fun requestPermission(
+        context: Activity,
+        permission: String,
+        justification: String,
+        id: Int
+    ) {
+        // Check if the permission has not been granted
+        if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_DENIED) {
+            // Should we show an explanation for the permission?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(context, permission)) {
+                Toast.makeText(context, justification, Toast.LENGTH_SHORT).show()
+            }
+            // Request the permission
+            ActivityCompat.requestPermissions(context, arrayOf(permission), id)
+        }
+    }
+
+    /**
+     * Handles the result of a permission request and initiates specific actions.
+     *
+     * @param requestCode The code associated with the permission request.
+     * @param permissions An array of permissions requested.
+     * @param grantResults An array of results indicating whether permissions were granted.
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Check if the requestCode corresponds to the LOCATION_PERMISSION_ID
+        if (requestCode == LOCATION_PERMISSION_ID) {
+            // Initialize the activity after permission result is received
+            init()
+        }
     }
 
 
