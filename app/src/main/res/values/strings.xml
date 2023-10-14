@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Taller02_ComputaciónMóvil</string>
+    <string name="camera">Camera</string>
+    <string name="map">Map</string>
+    <string name="foto_o_video">¿Foto o video?</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="direction">Direction</string>
+    <string name="ingrese_una_direcci_n">Ingrese una dirección</string>
+</resources>
