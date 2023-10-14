@@ -163,67 +163,53 @@ class CameraActivity : AppCompatActivity() {
         init()
     }
 
+    /**
+     * Initialize the activity by setting up UI components and click listeners.
+     */
     private fun init(){
+
+        // Initialize UI components and set click listeners
         switchCompat = binding.switchPhotoVideo
         imageViewContainer = binding.imageView
         videoViewContainer = binding.videoView
 
+        // Set a click listener for the "buttonCamera" to request camera permission
         binding.buttonCamera.setOnClickListener {
+            // Request camera permission
             verifyPermissions(this, android.Manifest.permission.CAMERA, "El permiso es requerido para tomar una foto y colocarla dentro de la aplicación")
         }
 
+        // Set a click listener for the "buttonGallery" to open the gallery and select images or videos
         binding.buttonGallery.setOnClickListener {
             val pickGallery = Intent(Intent.ACTION_PICK)
             if (switchCompat.isChecked) {
-                // Open the gallery for videos
+                // Open the gallery for videos if the switch is checked
                 pickGallery.type = "video/*"
             } else {
-                // Open the gallery for images
+                // Open the gallery for images if the switch is not checked
                 pickGallery.type = "image/*"
             }
 
+            // Launch the gallery selection intent
             galleryActivityResultLauncher.launch(pickGallery)
         }
-
-
     }
 
-    private fun verifyPermissions(context: Context, permission: String, rationale: String) {
-        when {
-            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
-                Snackbar.make(binding.root, "Ya tengo los permisos 😜", Snackbar.LENGTH_LONG).show()
-                updateUI(true)
-            }
-            shouldShowRequestPermissionRationale(permission) -> {
-                // We display a snackbar with the justification for the permission, and once it disappears, we request it again.
-                val snackbar = Snackbar.make(binding.root, rationale, Snackbar.LENGTH_LONG)
-                snackbar.addCallback(object : Snackbar.Callback() {
-                    override fun onDismissed(snackbar: Snackbar, event: Int) {
-                        if (event == DISMISS_EVENT_TIMEOUT) {
-                            getSimplePermission.launch(permission)
-                        }
-                    }
-                })
-                snackbar.show()
-            }
-            else -> {
-                getSimplePermission.launch(permission)
-            }
-        }
-    }
-
-    fun dipatchTakePictureIntent() {
+    /**
+     * Dispatches an intent to capture a picture using the device's camera.
+     */
+    private fun dipatchTakePictureIntent() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        // Crear el archivo donde debería ir la foto
+        // Create the file where the photo should be stored
         var imageFile: File? = null
         try {
             imageFile = createImageFile()
         } catch (ex: IOException) {
             logger.warning(ex.message)
         }
-        // Continua si el archivo ha sido creado exitosamente
+        // Continue if the file has been created successfully
         if (imageFile != null) {
-            // Guardar un archivo: Ruta para usar con ACTION_VIEW intents
+            // Save the file path for later use
             pictureImagePath = FileProvider.getUriForFile(this,"com.example.android.fileprovider", imageFile)
             logger.info("Ruta: ${pictureImagePath}")
             takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, pictureImagePath)
@@ -235,44 +221,110 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    fun dipatchTakeVideoIntent() {
+    /**
+     * Dispatches an intent to capture a video using the device's camera.
+     */
+    private fun dipatchTakeVideoIntent() {
+        // Create an intent to open the video capture feature of the camera
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
-        // Set maximum video duration in seconds
+
+        // Set the maximum duration of the video in seconds (in this case, 60 seconds)
         takeVideoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 60)
-        // Set video quality (0: low, 1: high)
+
+        // Set the video quality (0: low, 1: high)
         takeVideoIntent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 1)
         try {
+            // Launch the video capture intent and handle the result using cameraActivityResultLauncherVideo
             cameraActivityResultLauncherVideo.launch(takeVideoIntent)
         } catch (e: ActivityNotFoundException) {
+            // Handle the case where a camera app is not found on the device
             logger.warning("Camera app not found.")
         }
     }
 
+    /**
+     * Creates a file to store a captured image.
+     *
+     * @return A File object representing the image file.
+     * @throws IOException if there is an error during file creation.
+     */
     @Throws(IOException::class)
     private fun createImageFile(): File {
-        //Crear un nombre de archivo de imagen
+        // Create a timestamp based on the current date
         val timeStamp: String = DateFormat.getDateInstance().format(Date())
+
+        // Create a unique file name for the image using the timestamp
         val imageFileName = "${timeStamp}.jpg"
+
+        // Create a File object that represents the image file in the "Pictures" directory of the app's external files
         val imageFile = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES),imageFileName)
+
         return imageFile
     }
 
-    // Update activity behavior and actions according to result of permission request
-    fun updateUI(permission : Boolean) {
+    /**
+     *  -- P E R M I S S I O N S --
+     */
+
+    /**
+     * Verify and request a specific permission, displaying a rationale if needed.
+     *
+     * @param context The context in which the permission is requested.
+     * @param permission The permission to be verified and requested.
+     * @param rationale A message explaining why the permission is needed.
+     */
+    private fun verifyPermissions(context: Context, permission: String, rationale: String) {
+        when {
+            // Check if the permission is already granted
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED -> {
+                // If the permission is already granted, update the UI
+                updateUI(true)
+            }
+            // Check if we should display a rationale for the permission request
+            shouldShowRequestPermissionRationale(permission) -> {
+                // We display a snackbar with the justification for the permission, and once it disappears, we request it again.
+                val snackbar = Snackbar.make(binding.root, rationale, Snackbar.LENGTH_LONG)
+                snackbar.addCallback(object : Snackbar.Callback() {
+                    override fun onDismissed(snackbar: Snackbar, event: Int) {
+                        if (event == DISMISS_EVENT_TIMEOUT) {
+                            // Request the permission again after the Snackbar disappears
+                            getSimplePermission.launch(permission)
+                        }
+                    }
+                })
+                snackbar.show()
+            }
+            else -> {
+                // Request the permission without displaying a rationale
+                getSimplePermission.launch(permission)
+            }
+        }
+    }
+
+    /**
+     * Update the activity's behavior and actions based on the result of a permission request.
+     *
+     * @param permission Indicates whether the permission was granted (true) or denied (false).
+     */
+    private fun updateUI(permission : Boolean) {
+        // If the permission is granted, update the UI and perform actions
         if(permission){
             logger.info("Permission granted")
             if (switchCompat.isChecked){
+                // If the switch is set to video, initiate video capture
                 dipatchTakeVideoIntent()
                 videoViewContainer!!.visibility = View.VISIBLE
                 imageViewContainer!!.visibility = View.GONE
             }
             else{
+                // If the switch is set to photo, initiate image capture
                 dipatchTakePictureIntent()
                 videoViewContainer!!.visibility = View.GONE
                 imageViewContainer!!.visibility = View.VISIBLE
             }
 
         }else{
+            // If the permission is denied, log a warning
             logger.warning("Permission denied")
         }
     }
