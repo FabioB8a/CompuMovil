@@ -106,7 +106,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     lateinit var mAddress: EditText
 
     // Bono (Bonus Section)
-    private var polylineBond: Polyline? = null  // Polyline for bonus route
     private var start: String = ""               // Starting location for bonus route
     private var end: String = ""                 // Ending location for bonus route
     var poly: Polyline? = null                   // Polyline for drawing the route on the map
@@ -198,6 +197,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                                 R.raw.style_night
                             )
                         )
+                        binding.switchUserUbication.setTextColor(Color.parseColor("#ffffffff"))
                     } else {
                         Log.i("MAPS", "LIGHT MAP " + event.values[0])
                         mMap.setMapStyle(
@@ -206,6 +206,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                                 R.raw.style_day_silver
                             )
                         )
+                        binding.switchUserUbication.setTextColor(Color.parseColor("#ff000000"))
                     }
                 }
             }
@@ -232,6 +233,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     // Draw a Polyline on the map to display the user's route.
                     drawPolylineOnMap(previousLocations)
+                    if(binding.switchUserUbication.isChecked){
+                        val here = LatLng(mCurrentLocation!!.latitude, mCurrentLocation!!.longitude)
+                        mMap.moveCamera(CameraUpdateFactory.zoomTo(20f))
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(here))
+                    }
                 }
             }
         }
@@ -325,6 +331,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
+        binding.switchUserUbication.setOnCheckedChangeListener { buttonView, isChecked ->
+            Log.v("Switch State=", "" + isChecked)
+            if (isChecked){
+                val here = LatLng(mCurrentLocation!!.latitude, mCurrentLocation!!.longitude)
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(20f))
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(here))
+            }
+        }
 
     }
 
@@ -406,7 +420,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         // Configure the style of the line, such as color and width.
-        polylineOptions.color(Color.GRAY)
+        polylineOptions.color(Color.RED)
         polylineOptions.width(20f)
 
         // Add the Polyline to the map.
@@ -470,6 +484,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * Uses the OpenRouteService API to calculate the route and draws it on the map.
      */
     private fun createRoute() {
+
+        poly?.remove()
         CoroutineScope(Dispatchers.IO).launch {
             val call = getRetrofit().create(ApiService::class.java)
                 .getRoute("5b3ce3597851110001cf6248d4e9855b7cc848178fd19fe09eea5ebe", start, end)

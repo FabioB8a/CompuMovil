@@ -12,35 +12,54 @@
     tools:context=".MapsActivity"
     android:name="com.google.android.gms.maps.SupportMapFragment"
     />
+
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="6dp"
-        android:background="@drawable/rounded_edges"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="16dp"
-        android:gravity="center"
-        android:weightSum="1">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <ImageView
-            android:layout_width="0dp"
-            android:layout_height="30dp"
-            android:layout_weight="0.20"
-            android:contentDescription="@string/direction"
-            android:src="@drawable/direction" />
-        <EditText
-            android:id="@+id/address"
-            android:hint="@string/ingrese_una_direcci_n"
-            android:textSize="16sp"
-            android:textColor="#000000"
-            android:layout_width="0dp"
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchUserUbication"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="0.80"
-            android:inputType="text"
-            android:imeOptions="actionSend"
-            android:background="@null" />
+            android:layout_marginTop="8dp"
+            android:paddingStart="120dp"
+            android:paddingEnd="1dp"
+            android:textSize="12sp"
+            android:text="@string/mover_el_mapa_con_la_posici_n_del_usuario" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/rounded_edges"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="6dp"
+            android:weightSum="1">
+
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="0.20"
+                android:contentDescription="@string/direction"
+                android:src="@drawable/direction" />
+
+            <EditText
+                android:id="@+id/address"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.80"
+                android:background="@null"
+                android:hint="@string/ingrese_una_direcci_n"
+                android:imeOptions="actionSend"
+                android:inputType="text"
+                android:textColor="#000000"
+                android:textSize="16sp" />
 
 
-</LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
 </FrameLayout>

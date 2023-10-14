@@ -6,4 +6,5 @@
     <string name="title_activity_maps">MapsActivity</string>
     <string name="direction">Direction</string>
     <string name="ingrese_una_direcci_n">Ingrese una dirección</string>
+    <string name="mover_el_mapa_con_la_posici_n_del_usuario">Mover el mapa con la posición del usuario</string>
 </resources>
